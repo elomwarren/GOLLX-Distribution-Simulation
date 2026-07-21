@@ -26,7 +26,7 @@ dgollx <- function(x, Lambda, Alpha = 9, Beta = 0.51) {
         ((Beta * Alpha * Lambda^2) / (Lambda + 1)) *
             (((1 + 0.5 * Lambda * x^2) *
                 phi_x^(Beta - 1)) / (1 - Mu_x)^(1 - Beta * Alpha)) *
-            exp(Lambda * Beta * x) *
+            exp(-Lambda * Beta * x) *
             (
                 (1 - Mu_x)^Alpha + Mu_x^Alpha
             )^(-Beta - 1)
@@ -104,7 +104,11 @@ rgollx <- function(n, Lambda, Alpha = 9, Beta = 0.51) {
 # GOLLX Negative log-likelihood for MLE optimization in R #
 ###########################################################
 negllgollx <- function(Lambda, Alpha = 9, Beta = 0.51, x) {
-    -sum(dgollx(x, Lambda, Alpha, Beta))
+    val <- -sum(log(dgollx(x, Lambda, Alpha, Beta)))
+    if (!is.finite(val)) {
+        return(1e10)
+    }
+    val
 }
 
 # ==========
@@ -140,7 +144,7 @@ pxgamma <- function(x, Lambda) {
 ############################################
 # Quantile function (inverse CDF) of XGAMMA
 ############################################
-qgamma <- function(p, Lambda) {
+qxgamma <- function(p, Lambda) {
     # x > 0, Lambda > 0, Alpha, Beta > 0
     stopifnot(all(p > 0 & p < 1), Lambda > 0)
 
@@ -188,7 +192,11 @@ rxgamma <- function(n, Lambda) {
 # XGAMMA Negative log-likelihood for MLE optimization in R #
 ############################################################
 negllxgamma <- function(Lambda, x) {
-    -sum(dgamma(x, Lambda))
+    val <- -sum(log(dxgamma(x, Lambda)))
+    if (!is.finite(val)) {
+        return(1e10)
+    }
+    val
 }
 
 # =============================
@@ -198,7 +206,7 @@ negllxgamma <- function(Lambda, x) {
 ###########################
 # MLE 1D optimization helper
 ###########################
-FitMLE <- function(x, llfn, Start = 1 / mean(x), upper = 1e6) {
+FitMLE <- function(x, llfn, Start = 1 / mean(x), upper = 50) {
     # x :: vector, of data
     # llfn :: function string, e.g. llfn = "negllxgamma"
 
@@ -290,8 +298,10 @@ MonteCarloSim <- function(R, n,
 # SIMULATION
 # ==============================================================================
 # Simulation parameters
-R <- 10000
-n <- 100
-Lambda <- 0.5
+R <- 1000
+n <- 500
+Lambda <- 1
 
 MonteCarloSim(R, n, Lambda)
+
+MonteCarloSim(R, n, Lambda, rvfn = "rxgamma")
